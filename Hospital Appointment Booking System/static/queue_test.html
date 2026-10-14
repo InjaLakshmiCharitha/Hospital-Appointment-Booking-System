@@ -1,0 +1,142 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hospital Live Queue Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 20px;
+            background: #f4f7fb;
+        }
+
+        h1 {
+            color: #1e3a5f;
+        }
+
+        label {
+            display: block;
+            margin-top: 15px;
+            font-weight: bold;
+        }
+
+        input {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 10px;
+            margin-top: 5px;
+        }
+
+        button {
+            margin-top: 15px;
+            margin-right: 8px;
+            padding: 10px 16px;
+            cursor: pointer;
+        }
+
+        #status {
+            margin-top: 15px;
+            font-weight: bold;
+        }
+
+        #messages {
+            background: white;
+            border: 1px solid #ccc;
+            padding: 15px;
+            min-height: 200px;
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
+        }
+    </style>
+</head>
+<body>
+    <h1>Hospital Live Queue</h1>
+
+    <label for="doctorId">Doctor ID</label>
+    <input id="doctorId" type="number" min="1" value="1">
+
+    <label for="token">Access Token</label>
+    <input id="token" type="password" placeholder="Paste your access token">
+
+    <button id="connectBtn" onclick="connectWebSocket()">Connect</button>
+    <button onclick="disconnectWebSocket()">Disconnect</button>
+    <button onclick="clearMessages()">Clear Messages</button>
+
+    <p id="status">Disconnected</p>
+    <pre id="messages"></pre>
+
+    <script>
+        let socket = null;
+
+        function addMessage(message) {
+            const area = document.getElementById("messages");
+            area.textContent += message + "\n\n";
+            area.scrollTop = area.scrollHeight;
+        }
+
+        function connectWebSocket() {
+            disconnectWebSocket();
+
+            const doctorId = document.getElementById("doctorId").value;
+            const token = document.getElementById("token").value.trim();
+
+            if (!doctorId || !token) {
+                alert("Enter the doctor ID and access token.");
+                return;
+            }
+
+            const protocol = location.protocol === "https:" ? "wss:" : "ws:";
+            const url = `${protocol}//${location.host}/ws/queue/${doctorId}?token=${encodeURIComponent(token)}`;
+
+            socket = new WebSocket(url);
+
+            socket.onopen = function () {
+                document.getElementById("status").textContent = "Connected";
+                addMessage("WebSocket connected.");
+            };
+
+            socket.onmessage = function (event) {
+                try {
+                    addMessage(JSON.stringify(JSON.parse(event.data), null, 2));
+                } catch {
+                    addMessage(event.data);
+                }
+            };
+
+            socket.onerror = function () {
+                addMessage("WebSocket error. Check the server terminal and token.");
+            };
+
+            socket.onclose = function (event) {
+                document.getElementById("status").textContent =
+                    `Disconnected (code ${event.code})`;
+                addMessage("WebSocket connection closed.");
+            };
+        }
+
+        function disconnectWebSocket() {
+            if (socket) {
+                const oldSocket = socket;
+                socket = null;
+
+                if (
+                    oldSocket.readyState === WebSocket.OPEN ||
+                    oldSocket.readyState === WebSocket.CONNECTING
+                ) {
+                    oldSocket.close();
+                }
+            }
+
+            document.getElementById("status").textContent = "Disconnected";
+        }
+
+        function clearMessages() {
+            document.getElementById("messages").textContent = "";
+        }
+    </script>
+</body>
+</html>

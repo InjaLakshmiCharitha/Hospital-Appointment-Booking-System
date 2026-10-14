@@ -1,0 +1,15 @@
+fastapi
+uvicorn[standard]
+sqlalchemy
+pymysql
+alembic
+python-dotenv
+pydantic[email]
+PyJWT
+passlib[bcrypt]
+python-multipart
+apscheduler>=3.10,<4.0
+reportlab
+pytest
+httpx
+websockets
